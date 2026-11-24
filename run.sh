@@ -35,7 +35,7 @@ play() {
   show "$1"; echo "playing $f"; afplay "$f"
 }
 
-# pN or rN at any prompt; then back to paragraph $2
+# pN or rN typed at any prompt; then show paragraph $1 again
 jump() {
   if [[ $key =~ ^([pPrR])0*([0-9]+)$ ]]; then
     local k=${BASH_REMATCH[1]} n=${BASH_REMATCH[2]}
@@ -45,20 +45,20 @@ jump() {
   else
     echo "unknown: $key"
   fi
-  show "$2"
+  show "$1"
 }
 
 record() {
-  local n=$1
+  local n=$1; unset "kept[n]"
   show "$n"
   while :; do
     ask "Enter = start recording · p3 = play clip 3 · r3 = record clip 3 · Ctrl-C = quit"
-    [ -z "$key" ] || { jump "$n"; continue; }
+    [ -z "$key" ] || { jump "$n"; [ -n "${kept[n]}" ] && return; continue; }
     take "$n"
     while :; do
       ask "Enter = keep & next · p = play this take · r = redo · p3 = play clip 3 · r3 = record clip 3"
       case $key in
-        "") done_[n]=1; return ;;
+        "") kept[n]=1; return ;;
         [pP]) play "$n" ;;
         [rR]) show "$n"; continue 2 ;;
         *) jump "$n" ;;
@@ -67,7 +67,7 @@ record() {
   done
 }
 
-done_=() # clips kept this session
+kept=() # clips kept this session
 for ((n = 1; n <= ${#paras[@]}; n++)); do
-  if [ -n "${done_[n]}" ]; then printf '\n%d already recorded\n' "$n"; else record "$n"; fi
+  if [ -n "${kept[n]}" ]; then printf '\n%d already recorded\n' "$n"; else record "$n"; fi
 done

@@ -60,6 +60,18 @@ rec recordings/s-02.wav
 rec recordings/s-02.wav
 rec recordings/s-03.wav' 'redo · p3 = play clip 3 · r3 = record clip 3'
 check "start prompt lists r3" 'x\n' '' 'Enter = start recording · p3 = play clip 3 · r3 = record clip 3 · Ctrl-C = quit'
+check "after p1 the current paragraph shows again" '\n\n\np1\n' \
+'rec recordings/s-01.wav
+play recordings/s-01.wav'
+last=$(grep '^\[' <<<"$out" | tail -1)
+[ "$last" == "[2] two" ] || { echo "FAIL back to paragraph 2 after p1: got '$last'"; fail=1; }
+check "r1 on paragraph 1 keeps it and moves on to 2" 'r1\n\n\n\n\n\n\n' \
+'rec recordings/s-01.wav
+rec recordings/s-02.wav'
+check "r1 on a kept clip stays on it after p2" '\n\n\nr1\np2\n\n\n\n\n\n\n' \
+'rec recordings/s-01.wav
+rec recordings/s-01.wav
+rec recordings/s-02.wav'
 
 [ $fail = 0 ] && echo "all tests pass"
 exit $fail
