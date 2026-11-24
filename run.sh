@@ -26,7 +26,7 @@ take() {
   local pid=$!
   printf 'Recording... Enter = stop'; read -r _
   kill -INT "$pid" 2>/dev/null; wait "$pid"
-  echo "saved $f"
+  printf "saved %s\n\n" "$f"
 }
 
 play() {
