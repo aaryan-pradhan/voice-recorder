@@ -29,21 +29,38 @@ take() {
   echo "saved $f"
 }
 
-play() { show "$1"; echo "playing $(clip "$1")"; afplay "$(clip "$1")"; }
+play() {
+  local f; f=$(clip "$1")
+  [ -f "$f" ] || { echo "no clip $1 yet"; return; }
+  show "$1"; echo "playing $f"; afplay "$f"
+}
+
+# pN at any prompt; then back to paragraph $2
+jump() {
+  if [[ $key =~ ^[pP]0*([0-9]+)$ ]]; then
+    local n=${BASH_REMATCH[1]}
+    if ((n < 1 || n > ${#paras[@]})); then echo "no paragraph $n (script has 1-${#paras[@]})"
+    else play "$n"; fi
+  else
+    echo "unknown: $key"
+  fi
+  show "$2"
+}
 
 record() {
   local n=$1
   show "$n"
   while :; do
-    ask "Enter = start recording"
-    [ -z "$key" ] || continue
+    ask "Enter = start recording · p3 = play clip 3 · Ctrl-C = quit"
+    [ -z "$key" ] || { jump "$n"; continue; }
     take "$n"
     while :; do
-      ask "Enter = keep & next · p = play this take · r = redo"
+      ask "Enter = keep & next · p = play this take · r = redo · p3 = play clip 3"
       case $key in
         "") return ;;
         [pP]) play "$n" ;;
         [rR]) show "$n"; continue 2 ;;
+        *) jump "$n" ;;
       esac
     done
   done

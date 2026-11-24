@@ -43,6 +43,13 @@ play recordings/s-01.wav'
 check "r redoes this take after Enter" '\n\nr\n\n\n\n' \
 'rec recordings/s-01.wav
 rec recordings/s-01.wav' 'Enter = keep & next · p = play this take · r = redo'
+check "p1 before clip 1 exists says so" 'p1\n' '' 'no clip 1 yet'
+check "pN plays clip N at either prompt; 01 and P work" '\n\np01\n\nP1\n' \
+'rec recordings/s-01.wav
+play recordings/s-01.wav
+play recordings/s-01.wav' 'redo · p3 = play clip 3'
+check "pN past the last paragraph says so" 'p9\n' '' 'no paragraph 9 (script has 1-3)'
+check "unknown key says so" 'x\n' '' 'unknown: x'
 
 [ $fail = 0 ] && echo "all tests pass"
 exit $fail
