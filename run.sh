@@ -3,28 +3,71 @@
 [ -f "$1" ] || { echo "usage: $0 script.md"; exit 1; }
 name=$(basename "${1%.*}")
 mkdir -p recordings
-n=0
 
-rec() {
-  n=$((n+1))
-  f=$(printf "recordings/%s-%02d.wav" "$name" "$n")
-  printf "\n[%d] %s\n\n" "$n" "$para"
-  read -rp "Enter to start" </dev/tty
-  ffmpeg -loglevel error -f avfoundation -i ":${MIC:-default}" -y "$f" </dev/null &
-  pid=$!
-  read -rp "Recording... Enter to stop" </dev/tty
-  kill -INT "$pid"; wait "$pid"
-  echo "saved $f"
-}
-
-para=""
+paras=() para=""
 while IFS= read -r line || [ -n "$line" ]; do
   [[ $line == \#* ]] && continue
   if [ -z "${line// }" ]; then
-    [ -n "$para" ] && rec
+    [ -n "$para" ] && paras+=("$para")
     para=""
   else
     para="${para:+$para }$line"
   fi
 done < "$1"
-[ -n "$para" ] && rec
+[ -n "$para" ] && paras+=("$para")
+
+clip() { printf "recordings/%s-%02d.wav" "$name" "$1"; }
+show() { printf "\n[%d] %s\n\n" "$1" "${paras[$1-1]}"; }
+ask() { printf '  %s\n> ' "$1"; read -r key || { echo; exit; }; }
+
+take() {
+  local f; f=$(clip "$1")
+  ffmpeg -loglevel error -f avfoundation -i ":${MIC:-default}" -y "$f" </dev/null &
+  local pid=$!
+  printf 'Recording... Enter = stop'; read -r _
+  kill -INT "$pid" 2>/dev/null; wait "$pid"
+  printf "saved %s\n\n" "$f"
+}
+
+play() {
+  local f; f=$(clip "$1")
+  [ -f "$f" ] || { echo "no clip $1 yet"; return; }
+  show "$1"; echo "playing $f"; afplay "$f"
+}
+
+# pN or rN typed at any prompt; then show paragraph $1 again
+jump() {
+  if [[ $key =~ ^([pPrR])0*([0-9]+)$ ]]; then
+    local k=${BASH_REMATCH[1]} n=${BASH_REMATCH[2]}
+    if ((n < 1 || n > ${#paras[@]})); then echo "no paragraph $n (script has 1-${#paras[@]})"
+    elif [[ $k == [pP] ]]; then play "$n"
+    else record "$n"; fi
+  else
+    echo "unknown: $key"
+  fi
+  show "$1"
+}
+
+record() {
+  local n=$1; unset "kept[n]"
+  show "$n"
+  while :; do
+    ask "Enter = start recording · p3 = play clip 3 · r3 = record clip 3 · Ctrl-C = quit"
+    [ -z "$key" ] || { jump "$n"; [ -n "${kept[n]}" ] && return; continue; }
+    take "$n"
+    while :; do
+      ask "Enter = keep & next · p = play this take · r = redo · p3 = play clip 3 · r3 = record clip 3"
+      case $key in
+        "") kept[n]=1; return ;;
+        [pP]) play "$n" ;;
+        [rR]) show "$n"; continue 2 ;;
+        *) jump "$n" ;;
+      esac
+    done
+  done
+}
+
+kept=() # clips kept this session
+for ((n = 1; n <= ${#paras[@]}; n++)); do
+  if [ -n "${kept[n]}" ]; then printf '\n%d already recorded\n' "$n"; else record "$n"; fi
+done
