@@ -16,9 +16,10 @@ printf '# title\none\n\ntwo\n\nthree\n' > "$t/s.md"
 fail=0
 
 # check NAME KEYS WANT_LOG [TEXT_THE_SCREEN_MUST_SHOW]
+# SIGINT is ignored: piped keys stop a take instantly, before fake ffmpeg logs.
 check() {
   rm -rf "$t/recordings" "$t/log"
-  out=$(cd "$t" && printf "$2" | LOG="$t/log" PATH="$t/bin:$PATH" "$here/run.sh" s.md 2>&1)
+  out=$(cd "$t" && trap "" INT && printf "$2" | LOG="$t/log" PATH="$t/bin:$PATH" "$here/run.sh" s.md 2>&1)
   got=$(cat "$t/log" 2>/dev/null)
   [ "$got" == "$3" ] || { printf 'FAIL %s\nwant: %s\ngot:  %s\n' "$1" "$3" "$got"; fail=1; }
   [ -z "$4" ] || grep -qF -- "$4" <<<"$out" || { echo "FAIL $1: screen lacks: $4"; fail=1; }
