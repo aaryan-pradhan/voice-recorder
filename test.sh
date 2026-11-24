@@ -50,6 +50,16 @@ play recordings/s-01.wav
 play recordings/s-01.wav' 'redo · p3 = play clip 3'
 check "pN past the last paragraph says so" 'p9\n' '' 'no paragraph 9 (script has 1-3)'
 check "unknown key says so" 'x\n' '' 'unknown: x'
+check "rN records a future clip first, then it is skipped" 'r3\n\n\n\n\n\n\n\n\n\n' \
+'rec recordings/s-03.wav
+rec recordings/s-01.wav
+rec recordings/s-02.wav' '3 already recorded'
+check "rN from the review prompt has its own redo, then returns" '\n\nr02\n\n\nr\n\n\n\n\n\n\n\n' \
+'rec recordings/s-01.wav
+rec recordings/s-02.wav
+rec recordings/s-02.wav
+rec recordings/s-03.wav' 'redo · p3 = play clip 3 · r3 = record clip 3'
+check "start prompt lists r3" 'x\n' '' 'Enter = start recording · p3 = play clip 3 · r3 = record clip 3 · Ctrl-C = quit'
 
 [ $fail = 0 ] && echo "all tests pass"
 exit $fail
