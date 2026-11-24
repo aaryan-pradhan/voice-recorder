@@ -36,5 +36,13 @@ check "end of input quits instead of looping" '\n\n\n\n\n' \
 'rec recordings/s-01.wav
 rec recordings/s-02.wav'
 
+check "p plays this take, as often as you like" '\n\np\nP\n\n' \
+'rec recordings/s-01.wav
+play recordings/s-01.wav
+play recordings/s-01.wav'
+check "r redoes this take after Enter" '\n\nr\n\n\n\n' \
+'rec recordings/s-01.wav
+rec recordings/s-01.wav' 'Enter = keep & next · p = play this take · r = redo'
+
 [ $fail = 0 ] && echo "all tests pass"
 exit $fail

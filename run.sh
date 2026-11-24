@@ -29,12 +29,24 @@ take() {
   echo "saved $f"
 }
 
+play() { show "$1"; echo "playing $(clip "$1")"; afplay "$(clip "$1")"; }
+
 record() {
   local n=$1
   show "$n"
-  ask "Enter = start recording"
-  take "$n"
-  ask "Enter = keep & next"
+  while :; do
+    ask "Enter = start recording"
+    [ -z "$key" ] || continue
+    take "$n"
+    while :; do
+      ask "Enter = keep & next · p = play this take · r = redo"
+      case $key in
+        "") return ;;
+        [pP]) play "$n" ;;
+        [rR]) show "$n"; continue 2 ;;
+      esac
+    done
+  done
 }
 
 for ((n = 1; n <= ${#paras[@]}; n++)); do record "$n"; done
